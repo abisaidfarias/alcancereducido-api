@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - echo Installing dependencies...
+      - npm install
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Running tests...
+      # - npm test  # Descomentar cuando tengas tests
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Creating deployment package...
+      - zip -r deploy.zip . -x "*.git*" "*.ebextensions*" "buildspec.yml" "*.md" "node_modules/.cache/*"
+artifacts:
+  files:
+    - deploy.zip
+  name: alcancereducido-api-$(date +%Y-%m-%d-%H-%M-%S)
+
