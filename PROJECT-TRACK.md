@@ -402,3 +402,8 @@ Al iniciar la aplicación por primera vez, se crea automáticamente un usuario a
 6. **Futuro:** Agregar logging estructurado
 7. **Futuro:** Implementar CI/CD con GitHub Actions
 
+
+
+
+
+
