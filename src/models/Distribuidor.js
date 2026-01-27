@@ -7,6 +7,12 @@ const distribuidorSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  nombreRepresentante: {
+    type: String,
+    trim: true,
+    default: '',
+    description: 'Nombre completo del representante'
+  },
   domicilio: {
     type: String,
     trim: true,

@@ -181,6 +181,10 @@ export const getDistribuidorById = async (req, res) => {
  *               representante:
  *                 type: string
  *                 example: "Juan Pérez"
+ *               nombreRepresentante:
+ *                 type: string
+ *                 description: Nombre completo del representante (opcional)
+ *                 example: "Juan Pérez García"
  *               domicilio:
  *                 type: string
  *                 example: "Calle Principal 123"
@@ -194,6 +198,16 @@ export const getDistribuidorById = async (req, res) => {
  *               logo:
  *                 type: string
  *                 example: "https://example.com/logo.png"
+ *           examples:
+ *             ejemploCompleto:
+ *               summary: Ejemplo con todos los campos
+ *               value:
+ *                 representante: "Juan Pérez"
+ *                 nombreRepresentante: "Juan Pérez García"
+ *                 domicilio: "Calle Principal 123"
+ *                 email: "contacto@distribuidor.com"
+ *                 sitioWeb: "https://www.distribuidor.com"
+ *                 logo: "https://example.com/logo.png"
  *     responses:
  *       201:
  *         description: Distribuidor creado exitosamente con QR
@@ -212,7 +226,7 @@ export const getDistribuidorById = async (req, res) => {
 // Solo admin puede crear distribuidores
 export const createDistribuidor = async (req, res) => {
   try {
-    const { representante, domicilio, email, sitioWeb, logo, ...otrosDatos } = req.body;
+    const { representante, nombreRepresentante, domicilio, email, sitioWeb, logo, ...otrosDatos } = req.body;
 
     if (!representante) {
       return res.status(400).json({
@@ -234,6 +248,7 @@ export const createDistribuidor = async (req, res) => {
 
     const newDistribuidor = await Distribuidor.create({
       representante: representante.trim(),
+      nombreRepresentante: nombreRepresentante ? nombreRepresentante.trim() : '',
       domicilio: domicilio || '',
       email: email ? email.trim().toLowerCase() : '',
       sitioWeb: sitioWeb || '',
@@ -294,15 +309,34 @@ export const createDistribuidor = async (req, res) => {
  *             properties:
  *               representante:
  *                 type: string
+ *                 example: "Juan Pérez"
+ *               nombreRepresentante:
+ *                 type: string
+ *                 description: Nombre completo del representante
+ *                 example: "Juan Pérez García"
  *               domicilio:
  *                 type: string
+ *                 example: "Calle Principal 123"
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: "contacto@distribuidor.com"
  *               sitioWeb:
  *                 type: string
+ *                 example: "https://www.distribuidor.com"
  *               logo:
  *                 type: string
+ *                 example: "https://example.com/logo.png"
+ *           examples:
+ *             ejemploCompleto:
+ *               summary: Ejemplo con todos los campos
+ *               value:
+ *                 representante: "Juan Pérez"
+ *                 nombreRepresentante: "Juan Pérez García"
+ *                 domicilio: "Calle Principal 123"
+ *                 email: "contacto@distribuidor.com"
+ *                 sitioWeb: "https://www.distribuidor.com"
+ *                 logo: "https://example.com/logo.png"
  *     responses:
  *       200:
  *         description: Distribuidor actualizado
@@ -313,7 +347,7 @@ export const createDistribuidor = async (req, res) => {
 export const updateDistribuidor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { representante, email, ...updateData } = req.body;
+    const { representante, nombreRepresentante, email, ...updateData } = req.body;
 
     // Validar que el representante no existe si se actualiza
     if (representante) {
@@ -328,6 +362,11 @@ export const updateDistribuidor = async (req, res) => {
         });
       }
       updateData.representante = representante.trim();
+    }
+
+    // Actualizar nombreRepresentante si se proporciona
+    if (nombreRepresentante !== undefined) {
+      updateData.nombreRepresentante = nombreRepresentante ? nombreRepresentante.trim() : '';
     }
 
     // Normalizar email si se actualiza
@@ -664,6 +703,11 @@ export const getDistribuidorByRepresentante = async (req, res) => {
         tipo: dispositivo.tipo,
         foto: dispositivo.foto,
         fechaPublicacion: dispositivo.fechaPublicacion,
+        tecnologia: dispositivo.tecnologia || [],
+        frecuencias: dispositivo.frecuencias || [],
+        gananciaAntena: dispositivo.gananciaAntena || [],
+        EIRP: dispositivo.EIRP || [],
+        modulo: dispositivo.modulo || [],
         createdAt: dispositivo.createdAt,
         updatedAt: dispositivo.updatedAt
       };
@@ -676,8 +720,19 @@ export const getDistribuidorByRepresentante = async (req, res) => {
     );
 
     // Construir el objeto distribuidor con marcas anidadas
+    // Asegurar que nombreRepresentante esté incluido explícitamente
+    const distribuidorObj = distribuidor.toObject();
     const distribuidorConMarcas = {
-      ...distribuidor.toObject(),
+      _id: distribuidorObj._id,
+      representante: distribuidorObj.representante,
+      nombreRepresentante: distribuidorObj.nombreRepresentante || '',
+      domicilio: distribuidorObj.domicilio || '',
+      email: distribuidorObj.email || '',
+      sitioWeb: distribuidorObj.sitioWeb || '',
+      logo: distribuidorObj.logo || '',
+      dispositivos: distribuidorObj.dispositivos || [],
+      createdAt: distribuidorObj.createdAt,
+      updatedAt: distribuidorObj.updatedAt,
       marcas: marcas,
       totalMarcas: marcas.length,
       totalDispositivos: dispositivos.length

@@ -186,7 +186,7 @@ export const getDispositivoById = async (req, res) => {
  *                 example: "Galaxy S23"
  *               tipo:
  *                 type: string
- *                 enum: [telefono]
+ *                 description: Tipo de dispositivo (campo abierto)
  *                 example: "telefono"
  *               foto:
  *                 type: string
@@ -196,6 +196,36 @@ export const getDispositivoById = async (req, res) => {
  *                 format: date-time
  *                 description: Fecha de publicación del dispositivo
  *                 example: "2025-01-22T10:00:00.000Z"
+ *               tecnologia:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de tecnologías del dispositivo
+ *                 example: ["4G", "5G", "WiFi"]
+ *               frecuencias:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de frecuencias del dispositivo
+ *                 example: ["850 MHz", "1900 MHz", "2.4 GHz"]
+ *               gananciaAntena:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de ganancia de antena del dispositivo
+ *                 example: ["3 dBi", "5 dBi"]
+ *               EIRP:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de EIRP (Effective Isotropic Radiated Power) del dispositivo
+ *                 example: ["20 dBm", "23 dBm"]
+ *               modulo:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de módulos del dispositivo
+ *                 example: ["Módulo A", "Módulo B"]
  *               marca:
  *                 type: string
  *                 description: ID de la marca (debe existir)
@@ -215,7 +245,19 @@ export const getDispositivoById = async (req, res) => {
 // Solo admin puede crear dispositivos
 export const createDispositivo = async (req, res) => {
   try {
-    const { modelo, tipo, foto, fechaPublicacion, marca, distribuidores } = req.body;
+    const { 
+      modelo, 
+      tipo, 
+      foto, 
+      fechaPublicacion, 
+      tecnologia, 
+      frecuencias, 
+      gananciaAntena, 
+      EIRP, 
+      modulo, 
+      marca, 
+      distribuidores 
+    } = req.body;
 
     if (!modelo || !marca) {
       return res.status(400).json({
@@ -262,10 +304,15 @@ export const createDispositivo = async (req, res) => {
     }
 
     const newDispositivo = await Dispositivo.create({
-      modelo,
-      tipo: tipo || 'telefono',
+      modelo: modelo.trim(),
+      tipo: tipo || '',
       foto: foto || '',
       fechaPublicacion: fechaPublicacion ? new Date(fechaPublicacion) : new Date(),
+      tecnologia: Array.isArray(tecnologia) ? tecnologia : [],
+      frecuencias: Array.isArray(frecuencias) ? frecuencias : [],
+      gananciaAntena: Array.isArray(gananciaAntena) ? gananciaAntena : [],
+      EIRP: Array.isArray(EIRP) ? EIRP : [],
+      modulo: Array.isArray(modulo) ? modulo : [],
       marca,
       distribuidores
     });
@@ -331,13 +378,46 @@ export const createDispositivo = async (req, res) => {
  *                 type: string
  *               tipo:
  *                 type: string
- *                 enum: [telefono]
+ *                 description: Tipo de dispositivo (campo abierto)
+ *                 example: "telefono"
  *               foto:
  *                 type: string
+ *                 example: "https://example.com/foto.jpg"
  *               fechaPublicacion:
  *                 type: string
  *                 format: date-time
  *                 description: Fecha de publicación del dispositivo
+ *                 example: "2025-01-22T10:00:00.000Z"
+ *               tecnologia:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de tecnologías del dispositivo
+ *                 example: ["4G", "5G", "WiFi"]
+ *               frecuencias:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de frecuencias del dispositivo
+ *                 example: ["850 MHz", "1900 MHz", "2.4 GHz"]
+ *               gananciaAntena:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de ganancia de antena del dispositivo
+ *                 example: ["3 dBi", "5 dBi"]
+ *               EIRP:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de EIRP (Effective Isotropic Radiated Power) del dispositivo
+ *                 example: ["20 dBm", "23 dBm"]
+ *               modulo:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de módulos del dispositivo
+ *                 example: ["Módulo A", "Módulo B"]
  *               marca:
  *                 type: string
  *                 description: ID de la marca (debe existir)
@@ -356,7 +436,19 @@ export const createDispositivo = async (req, res) => {
 export const updateDispositivo = async (req, res) => {
   try {
     const { id } = req.params;
-    const { modelo, marca, distribuidores, fechaPublicacion, ...updateData } = req.body;
+    const { 
+      modelo, 
+      tipo, 
+      marca, 
+      distribuidores, 
+      fechaPublicacion, 
+      tecnologia, 
+      frecuencias, 
+      gananciaAntena, 
+      EIRP, 
+      modulo, 
+      ...updateData 
+    } = req.body;
 
     // Validar que el modelo no existe si se actualiza
     if (modelo) {
@@ -383,6 +475,28 @@ export const updateDispositivo = async (req, res) => {
         });
       }
       updateData.marca = marca;
+    }
+
+    // Actualizar tipo si se proporciona
+    if (tipo !== undefined) {
+      updateData.tipo = tipo || '';
+    }
+
+    // Actualizar arrays si se proporcionan
+    if (tecnologia !== undefined) {
+      updateData.tecnologia = Array.isArray(tecnologia) ? tecnologia : [];
+    }
+    if (frecuencias !== undefined) {
+      updateData.frecuencias = Array.isArray(frecuencias) ? frecuencias : [];
+    }
+    if (gananciaAntena !== undefined) {
+      updateData.gananciaAntena = Array.isArray(gananciaAntena) ? gananciaAntena : [];
+    }
+    if (EIRP !== undefined) {
+      updateData.EIRP = Array.isArray(EIRP) ? EIRP : [];
+    }
+    if (modulo !== undefined) {
+      updateData.modulo = Array.isArray(modulo) ? modulo : [];
     }
 
     // Validar y procesar fechaPublicacion si se actualiza

@@ -9,9 +9,9 @@ const dispositivoSchema = new mongoose.Schema({
   },
   tipo: {
     type: String,
-    enum: ['telefono'],
-    default: 'telefono',
-    required: true
+    trim: true,
+    default: '',
+    description: 'Tipo de dispositivo (campo abierto)'
   },
   foto: {
     type: String,
@@ -23,6 +23,31 @@ const dispositivoSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
     description: 'Fecha de publicación del dispositivo'
+  },
+  tecnologia: {
+    type: [String],
+    default: [],
+    description: 'Array de tecnologías del dispositivo'
+  },
+  frecuencias: {
+    type: [String],
+    default: [],
+    description: 'Array de frecuencias del dispositivo'
+  },
+  gananciaAntena: {
+    type: [String],
+    default: [],
+    description: 'Array de ganancia de antena del dispositivo'
+  },
+  EIRP: {
+    type: [String],
+    default: [],
+    description: 'Array de EIRP (Effective Isotropic Radiated Power) del dispositivo'
+  },
+  modulo: {
+    type: [String],
+    default: [],
+    description: 'Array de módulos del dispositivo'
   },
   marca: {
     type: mongoose.Schema.Types.ObjectId,

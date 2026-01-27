@@ -79,6 +79,11 @@ const options = {
               description: 'Nombre del representante del distribuidor',
               example: 'Juan Pérez'
             },
+            nombreRepresentante: {
+              type: 'string',
+              description: 'Nombre completo del representante',
+              example: 'Juan Pérez García'
+            },
             domicilio: {
               type: 'string',
               description: 'Dirección del distribuidor',
@@ -168,10 +173,8 @@ const options = {
             },
             tipo: {
               type: 'string',
-              enum: ['telefono'],
-              description: 'Tipo de dispositivo',
-              example: 'telefono',
-              default: 'telefono'
+              description: 'Tipo de dispositivo (campo abierto)',
+              example: 'telefono'
             },
             foto: {
               type: 'string',
@@ -183,6 +186,46 @@ const options = {
               format: 'date-time',
               description: 'Fecha de publicación del dispositivo',
               example: '2025-01-22T10:00:00.000Z'
+            },
+            tecnologia: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array de tecnologías del dispositivo',
+              example: ['4G', '5G', 'WiFi']
+            },
+            frecuencias: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array de frecuencias del dispositivo',
+              example: ['850 MHz', '1900 MHz', '2.4 GHz']
+            },
+            gananciaAntena: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array de ganancia de antena del dispositivo',
+              example: ['3 dBi', '5 dBi']
+            },
+            EIRP: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array de EIRP (Effective Isotropic Radiated Power) del dispositivo',
+              example: ['20 dBm', '23 dBm']
+            },
+            modulo: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array de módulos del dispositivo',
+              example: ['Módulo A', 'Módulo B']
             },
             marca: {
               type: 'object',

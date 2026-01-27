@@ -1,16 +1,18 @@
 # API Alcance Reducido
 
-API REST con autenticación JWT para gestión de usuarios y distribuidores, incluyendo generación de códigos QR únicos.
+API REST con autenticación JWT para gestión de usuarios, distribuidores, dispositivos móviles y marcas, incluyendo generación de códigos QR únicos y almacenamiento de imágenes en Amazon S3.
 
-## Características
+## 🚀 Características
 
 - ✅ Autenticación JWT (JSON Web Tokens)
-- ✅ CRUD completo de usuarios
-- ✅ CRUD completo de distribuidores
+- ✅ CRUD completo de usuarios, distribuidores, dispositivos y marcas
 - ✅ Generación de códigos QR únicos para cada distribuidor
 - ✅ Endpoint público para consultar información de distribuidores mediante QR
+- ✅ Almacenamiento de imágenes en Amazon S3
+- ✅ Documentación interactiva con Swagger
+- ✅ Despliegue en AWS Elastic Beanstalk con HTTPS
 
-## Tecnologías
+## 🛠️ Tecnologías
 
 - **Node.js** con **Express**
 - **MongoDB** con **Mongoose** (ODM)
@@ -18,18 +20,20 @@ API REST con autenticación JWT para gestión de usuarios y distribuidores, incl
 - **bcryptjs** para hash de contraseñas
 - **qrcode** para generación de códigos QR
 - **Swagger** para documentación interactiva de la API
+- **Multer** y **Multer-S3** para subida de imágenes
+- **AWS SDK** para integración con S3 y Secrets Manager
 - **dotenv** para variables de entorno
 
-## Instalación
+## 📦 Instalación
 
-1. Instalar dependencias:
+1. **Instalar dependencias:**
 ```bash
 npm install
 ```
 
-2. Asegúrate de tener MongoDB instalado y corriendo, o usa MongoDB Atlas (cloud).
+2. **Configurar variables de entorno:**
 
-3. Crear archivo `.env`:
+Crear archivo `.env` en la raíz del proyecto:
 ```env
 PORT=3000
 JWT_SECRET=tu_secret_key_super_segura_aqui
@@ -38,12 +42,20 @@ JWT_EXPIRES_IN=24h
 MONGODB_URI=mongodb://localhost:27017/alcancereducido
 ```
 
-   Para MongoDB Atlas, usa:
-   ```env
-   MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/alcancereducido
-   ```
+Para MongoDB Atlas:
+```env
+MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/alcancereducido
+```
 
-4. Iniciar el servidor:
+Para usar S3 (opcional):
+```env
+AWS_ACCESS_KEY_ID=tu_access_key_id
+AWS_SECRET_ACCESS_KEY=tu_secret_access_key
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=alcancereducido-images
+```
+
+3. **Iniciar el servidor:**
 ```bash
 # Desarrollo (con nodemon)
 npm run dev
@@ -52,132 +64,14 @@ npm run dev
 npm start
 ```
 
-## Endpoints
+## 📚 Documentación
 
-### Autenticación
+### Swagger UI
 
-#### Registrar usuario
-```
-POST /api/auth/register
-Body: {
-  "nombre": "Juan Pérez",
-  "email": "juan@example.com",
-  "password": "password123",
-  "rol": "usuario" // opcional, default: "usuario"
-}
-```
+Una vez iniciado el servidor, accede a la documentación interactiva:
 
-#### Iniciar sesión
-```
-POST /api/auth/login
-Body: {
-  "email": "juan@example.com",
-  "password": "password123"
-}
-```
-
-#### Obtener perfil (requiere token)
-```
-GET /api/auth/profile
-Headers: {
-  "Authorization": "Bearer <token>"
-}
-```
-
-### Usuarios (requieren autenticación)
-
-- `GET /api/users` - Listar todos los usuarios
-- `GET /api/users/:id` - Obtener usuario por ID
-- `POST /api/users` - Crear nuevo usuario
-- `PUT /api/users/:id` - Actualizar usuario
-- `DELETE /api/users/:id` - Eliminar usuario
-
-### Distribuidores
-
-#### CRUD (requieren autenticación)
-
-- `GET /api/distribuidores` - Listar todos los distribuidores
-- `GET /api/distribuidores/:id` - Obtener distribuidor por ID
-- `POST /api/distribuidores` - Crear nuevo distribuidor (genera QR automáticamente)
-- `PUT /api/distribuidores/:id` - Actualizar distribuidor
-- `DELETE /api/distribuidores/:id` - Eliminar distribuidor
-- `GET /api/distribuidores/:id/qr` - Generar/regenerar QR para un distribuidor
-
-#### Endpoint público (sin autenticación)
-
-- `GET /api/distribuidores/:slug/info` - Obtener información del distribuidor (usado por el QR)
-
-## Ejemplo de uso
-
-### 1. Registrar un usuario
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nombre": "Admin",
-    "email": "admin@example.com",
-    "password": "admin123",
-    "rol": "admin"
-  }'
-```
-
-### 2. Iniciar sesión
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@example.com",
-    "password": "admin123"
-  }'
-```
-
-### 3. Crear un distribuidor
-```bash
-curl -X POST http://localhost:3000/api/distribuidores \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <tu_token>" \
-  -d '{
-    "nombre": "Distribuidor ABC"
-  }'
-```
-
-La respuesta incluirá el QR code en formato base64 y la URL asociada.
-
-### 4. Obtener información del distribuidor (público)
-```bash
-curl http://localhost:3000/api/distribuidores/<id_o_nombre>/info
-```
-
-## Estructura del proyecto
-
-```
-src/
-├── config/
-│   ├── config.js          # Configuración de la aplicación
-│   └── database.js        # Base de datos en memoria (temporal)
-├── controllers/
-│   ├── authController.js  # Controladores de autenticación
-│   ├── userController.js  # Controladores de usuarios
-│   └── distribuidorController.js # Controladores de distribuidores
-├── middleware/
-│   └── auth.js            # Middleware de autenticación JWT
-├── models/
-│   ├── User.js            # Modelo de Usuario
-│   └── Distribuidor.js    # Modelo de Distribuidor
-├── routes/
-│   ├── authRoutes.js      # Rutas de autenticación
-│   ├── userRoutes.js      # Rutas de usuarios
-│   └── distribuidorRoutes.js # Rutas de distribuidores
-├── services/
-│   └── qrService.js       # Servicio de generación de QR
-└── server.js              # Punto de entrada de la aplicación
-```
-
-## Documentación Swagger
-
-La API incluye documentación interactiva con Swagger. Una vez iniciado el servidor, accede a:
-
-**http://localhost:3000/api-docs**
+**Local:** http://localhost:3000/api-docs  
+**Producción:** https://api.alcance-reducido.com/api-docs
 
 Desde Swagger UI puedes:
 - Ver todos los endpoints disponibles
@@ -185,7 +79,89 @@ Desde Swagger UI puedes:
 - Ver ejemplos de requests y responses
 - Autenticarte con JWT usando el botón "Authorize"
 
-## Usuario por Defecto
+## 🔐 Autenticación
+
+### Registrar usuario
+```bash
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "password": "password123",
+  "rol": "usuario"  // opcional: "admin", "distribuidor", "usuario"
+}
+```
+
+### Iniciar sesión
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "juan@example.com",
+  "password": "password123"
+}
+```
+
+### Usar token
+```bash
+GET /api/users
+Authorization: Bearer <tu_token>
+```
+
+## 📡 Endpoints Principales
+
+### Autenticación
+- `POST /api/auth/register` - Registrar usuario
+- `POST /api/auth/login` - Iniciar sesión
+- `GET /api/auth/profile` - Obtener perfil (requiere token)
+
+### Usuarios (requieren autenticación)
+- `GET /api/users` - Listar todos
+- `GET /api/users/:id` - Obtener por ID
+- `POST /api/users` - Crear
+- `PUT /api/users/:id` - Actualizar
+- `DELETE /api/users/:id` - Eliminar
+
+### Distribuidores
+- `GET /api/distribuidores` - Listar todos (requiere autenticación)
+- `GET /api/distribuidores/:id` - Obtener por ID (requiere autenticación)
+- `GET /api/distribuidores/representante/:representante` - Obtener por representante
+- `GET /api/distribuidores/:slug/info` - **Público** - Obtener información del distribuidor
+- `POST /api/distribuidores` - Crear (requiere admin)
+- `PUT /api/distribuidores/:id` - Actualizar (requiere admin)
+- `DELETE /api/distribuidores/:id` - Eliminar (requiere admin)
+- `GET /api/distribuidores/:id/qr` - Generar/regenerar QR
+
+### Dispositivos (requieren autenticación)
+- `GET /api/dispositivos` - Listar todos (con filtros por marca y banda)
+- `GET /api/dispositivos/:id` - Obtener por ID
+- `POST /api/dispositivos` - Crear (solo admin)
+- `PUT /api/dispositivos/:id` - Actualizar (solo admin)
+- `DELETE /api/dispositivos/:id` - Eliminar (solo admin)
+
+### Marcas (requieren autenticación)
+- `GET /api/marcas` - Listar todas
+- `GET /api/marcas/:id` - Obtener por ID
+- `POST /api/marcas` - Crear (solo admin)
+- `PUT /api/marcas/:id` - Actualizar (solo admin)
+- `DELETE /api/marcas/:id` - Eliminar (solo admin)
+
+### Upload de Imágenes (requiere admin)
+- `POST /api/upload` - Subir imagen única
+  - Campo: `image` (multipart/form-data)
+  - Tipos permitidos: JPEG, PNG, GIF, WEBP
+  - Tamaño máximo: 5MB
+  - Retorna: URL pública de S3
+
+- `POST /api/upload/multiple` - Subir múltiples imágenes
+  - Campo: `images` (array de archivos)
+  - Mismas validaciones que upload único
+  - Retorna: Array de URLs públicas
+
+## 🔑 Usuario por Defecto
 
 Al iniciar la aplicación por primera vez, se crea automáticamente un usuario administrador:
 
@@ -195,20 +171,53 @@ Al iniciar la aplicación por primera vez, se crea automáticamente un usuario a
 
 Este usuario se puede usar para hacer login y obtener un token JWT.
 
-## Notas
+## 📁 Estructura del Proyecto
+
+```
+src/
+├── config/          # Configuración (DB, S3, Swagger, Secrets)
+├── controllers/     # Lógica de negocio
+├── middleware/      # Autenticación, permisos, upload
+├── models/          # Modelos de Mongoose
+├── routes/          # Definición de rutas
+├── services/        # Servicios (QR, etc.)
+└── server.js        # Punto de entrada
+```
+
+## 🌐 URLs de Producción
+
+- **API Base:** https://api.alcance-reducido.com
+- **Swagger UI:** https://api.alcance-reducido.com/api-docs
+- **Health Check:** https://api.alcance-reducido.com/
+
+## 🔒 Permisos
+
+- **Admin:** Acceso completo a todos los recursos
+- **Distribuidor:** Solo lectura de su distribuidor y dispositivos asociados
+- **Usuario:** Acceso básico según configuración
+
+## 📝 Notas
 
 - La base de datos es **MongoDB** con Mongoose ODM
-- Los campos específicos de distribuidores se agregarán cuando se proporcionen los datos
 - El QR contiene una URL única que apunta a la información del distribuidor
 - Se puede acceder a la información del distribuidor mediante el ID (MongoDB ObjectId) o nombre (slug)
 - Los IDs de MongoDB son ObjectIds de 24 caracteres hexadecimales
+- Las contraseñas se almacenan con hash usando bcryptjs
+- Los tokens JWT tienen expiración configurable (default: 24h)
 - El usuario por defecto solo se crea si no existe previamente
 
-## Próximos pasos
+## 📖 Historial de Cambios
 
-- [ ] Agregar campos específicos de distribuidores
-- [ ] Integrar base de datos real (MongoDB, PostgreSQL, etc.)
-- [ ] Agregar validaciones más robustas
-- [ ] Implementar paginación
-- [ ] Agregar tests
+Ver `PROJECT-TRACK.md` para el historial completo de cambios y funcionalidades implementadas.
 
+## 🤝 Contribuir
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📄 Licencia
+
+Este proyecto es privado.
