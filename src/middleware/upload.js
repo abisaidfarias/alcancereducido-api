@@ -5,8 +5,18 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
 // Validar tipos de archivo permitidos
-const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-const maxFileSize = 5 * 1024 * 1024; // 5MB
+const allowedMimeTypes = [
+  'image/jpeg', 
+  'image/jpg', 
+  'image/png', 
+  'image/gif', 
+  'image/webp',
+  'application/x-rar-compressed',
+  'application/vnd.rar',
+  'application/zip',
+  'application/x-zip-compressed'
+];
+const maxFileSize = 10 * 1024 * 1024; // 10MB
 
 // Configurar multer para S3
 const upload = multer({
@@ -20,12 +30,14 @@ const upload = multer({
       const ext = path.extname(file.originalname);
       const filename = `${uuidv4()}${ext}`;
       
-      // Organizar por tipo: logos, fotos, etc.
+      // Organizar por tipo: logos, fotos, test-reports, etc.
       let folder = 'general';
       if (file.fieldname === 'logo') {
         folder = 'logos';
       } else if (file.fieldname === 'foto') {
         folder = 'fotos';
+      } else if (file.fieldname === 'testReport' || file.fieldname === 'testReportFile') {
+        folder = 'test-reports';
       }
       
       const key = `${folder}/${filename}`;
@@ -43,10 +55,15 @@ const upload = multer({
     fileSize: maxFileSize
   },
   fileFilter: function (req, file, cb) {
-    if (allowedMimeTypes.includes(file.mimetype)) {
+    // Verificar por MIME type o extensión del archivo
+    const ext = path.extname(file.originalname).toLowerCase();
+    const isValidMimeType = allowedMimeTypes.includes(file.mimetype);
+    const isValidExtension = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.rar', '.zip'].includes(ext);
+    
+    if (isValidMimeType || isValidExtension) {
       cb(null, true);
     } else {
-      cb(new Error(`Tipo de archivo no permitido. Solo se permiten: ${allowedMimeTypes.join(', ')}`), false);
+      cb(new Error(`Tipo de archivo no permitido. Solo se permiten: imágenes (JPEG, PNG, GIF, WEBP) y archivos comprimidos (RAR, ZIP)`), false);
     }
   }
 });

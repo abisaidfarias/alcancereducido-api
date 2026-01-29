@@ -31,7 +31,7 @@ import { generateQRForDistribuidor } from '../services/qrService.js';
  *   get:
  *     summary: Obtener lista pública de nombres de distribuidores
  *     tags: [Distribuidores]
- *     description: Endpoint público que retorna solo los nombres (representantes) de todos los distribuidores
+ *     description: Endpoint público que retorna los nombres (representantes) y nombreRepresentante de todos los distribuidores
  *     responses:
  *       200:
  *         description: Lista de nombres de distribuidores
@@ -51,11 +51,13 @@ import { generateQRForDistribuidor } from '../services/qrService.js';
  *                         type: string
  *                       representante:
  *                         type: string
+ *                       nombreRepresentante:
+ *                         type: string
  */
 export const getNombresDistribuidores = async (req, res) => {
   try {
-    // Obtener solo los nombres (representantes) de todos los distribuidores
-    const distribuidores = await Distribuidor.find({}, 'representante').sort({ representante: 1 });
+    // Obtener representante y nombreRepresentante de todos los distribuidores
+    const distribuidores = await Distribuidor.find({}, 'representante nombreRepresentante').sort({ representante: 1 });
     
     res.json({
       count: distribuidores.length,
@@ -642,6 +644,16 @@ export const generateQR = async (req, res) => {
  *                                           type: string
  *                                           format: date-time
  *                                           description: Fecha de publicación del dispositivo
+ *                                         nombreTestReport:
+ *                                           type: array
+ *                                           items:
+ *                                             type: string
+ *                                           description: Array de nombres de Test Report del dispositivo
+ *                                         testReportFiles:
+ *                                           type: array
+ *                                           items:
+ *                                             type: string
+ *                                           description: Array de archivos de Test Report del dispositivo
  *                                         createdAt:
  *                                           type: string
  *                                           format: date-time
@@ -708,6 +720,11 @@ export const getDistribuidorByRepresentante = async (req, res) => {
         gananciaAntena: dispositivo.gananciaAntena || [],
         EIRP: dispositivo.EIRP || [],
         modulo: dispositivo.modulo || [],
+        nombreTestReport: dispositivo.nombreTestReport || [],
+        testReportFiles: dispositivo.testReportFiles || '',
+        fechaCertificacionSubtel: dispositivo.fechaCertificacionSubtel || null,
+        oficioCertificacionSubtel: dispositivo.oficioCertificacionSubtel || '',
+        resolutionVersion: dispositivo.resolutionVersion || '2017',
         createdAt: dispositivo.createdAt,
         updatedAt: dispositivo.updatedAt
       };

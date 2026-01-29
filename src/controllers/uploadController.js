@@ -49,7 +49,7 @@
  *               image:
  *                 type: string
  *                 format: binary
- *                 description: Archivo de imagen (JPEG, PNG, GIF, WEBP - máximo 5MB)
+ *                 description: Archivo de imagen (JPEG, PNG, GIF, WEBP) o archivo comprimido (RAR, ZIP) - máximo 10MB
  *               type:
  *                 type: string
  *                 enum: [logo, foto, general]
@@ -74,7 +74,7 @@
  *                   example: Archivo demasiado grande
  *                 message:
  *                   type: string
- *                   example: El tamaño máximo permitido es 5MB
+ *                   example: El tamaño máximo permitido es 10MB
  *       401:
  *         description: No autorizado (token inválido o faltante)
  *       500:
@@ -133,7 +133,7 @@ export const uploadImage = async (req, res) => {
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: Archivos de imagen (máximo 10, cada uno máximo 5MB)
+ *                 description: Archivos de imagen (JPEG, PNG, GIF, WEBP) o archivos comprimidos (RAR, ZIP) - máximo 10, cada uno máximo 10MB
  *     responses:
  *       200:
  *         description: Imágenes subidas exitosamente
@@ -192,6 +192,7 @@ export const uploadMultipleImages = async (req, res) => {
     });
   }
 };
+
 
 
 

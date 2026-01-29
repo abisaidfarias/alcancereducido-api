@@ -49,6 +49,34 @@ const dispositivoSchema = new mongoose.Schema({
     default: [],
     description: 'Array de módulos del dispositivo'
   },
+  nombreTestReport: {
+    type: [String],
+    default: [],
+    description: 'Array de nombres de Test Report del dispositivo'
+  },
+  testReportFiles: {
+    type: String,
+    trim: true,
+    default: '',
+    description: 'URL del archivo de Test Report (RAR/ZIP) subido al servidor'
+  },
+  fechaCertificacionSubtel: {
+    type: Date,
+    default: null,
+    description: 'Fecha de Certificación SUBTEL'
+  },
+  oficioCertificacionSubtel: {
+    type: String,
+    trim: true,
+    default: '',
+    description: 'Oficio de Certificación SUBTEL'
+  },
+  resolutionVersion: {
+    type: String,
+    enum: ['2017', '2025'],
+    default: '2017',
+    description: 'Versión de resolución SUBTEL'
+  },
   marca: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Marca',

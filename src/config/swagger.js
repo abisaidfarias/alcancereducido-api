@@ -227,6 +227,36 @@ const options = {
               description: 'Array de módulos del dispositivo',
               example: ['Módulo A', 'Módulo B']
             },
+            nombreTestReport: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array de nombres de Test Report del dispositivo',
+              example: ['Test Report Galaxy S23', 'Test Report WiFi']
+            },
+            testReportFiles: {
+              type: 'string',
+              description: 'URL del archivo de Test Report (RAR/ZIP) subido al servidor',
+              example: 'https://alcancereducido-images.s3.us-east-1.amazonaws.com/test-reports/123e4567-e89b-12d3-a456-426614174000.zip'
+            },
+            fechaCertificacionSubtel: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de Certificación SUBTEL',
+              example: '2025-01-15T10:00:00.000Z'
+            },
+            oficioCertificacionSubtel: {
+              type: 'string',
+              description: 'Oficio de Certificación SUBTEL',
+              example: 'Oficio-12345-2025'
+            },
+            resolutionVersion: {
+              type: 'string',
+              enum: ['2017', '2025'],
+              description: 'Versión de resolución SUBTEL',
+              example: '2025'
+            },
             marca: {
               type: 'object',
               description: 'Marca del dispositivo (referencia a Marca)',

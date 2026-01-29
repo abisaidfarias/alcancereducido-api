@@ -226,6 +226,30 @@ export const getDispositivoById = async (req, res) => {
  *                   type: string
  *                 description: Array de módulos del dispositivo
  *                 example: ["Módulo A", "Módulo B"]
+ *               nombreTestReport:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de nombres de Test Report del dispositivo
+ *                 example: ["Test Report Galaxy S23", "Test Report WiFi"]
+ *               testReportFiles:
+ *                 type: string
+ *                 description: URL del archivo de Test Report (RAR/ZIP) subido al servidor
+ *                 example: "https://alcancereducido-images.s3.us-east-1.amazonaws.com/test-reports/123e4567-e89b-12d3-a456-426614174000.zip"
+ *               fechaCertificacionSubtel:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Fecha de Certificación SUBTEL
+ *                 example: "2025-01-15T10:00:00.000Z"
+ *               oficioCertificacionSubtel:
+ *                 type: string
+ *                 description: Oficio de Certificación SUBTEL
+ *                 example: "Oficio-12345-2025"
+ *               resolutionVersion:
+ *                 type: string
+ *                 enum: ["2017", "2025"]
+ *                 description: Versión de resolución SUBTEL
+ *                 example: "2025"
  *               marca:
  *                 type: string
  *                 description: ID de la marca (debe existir)
@@ -255,6 +279,11 @@ export const createDispositivo = async (req, res) => {
       gananciaAntena, 
       EIRP, 
       modulo, 
+      nombreTestReport,
+      testReportFiles,
+      fechaCertificacionSubtel,
+      oficioCertificacionSubtel,
+      resolutionVersion,
       marca, 
       distribuidores 
     } = req.body;
@@ -313,6 +342,11 @@ export const createDispositivo = async (req, res) => {
       gananciaAntena: Array.isArray(gananciaAntena) ? gananciaAntena : [],
       EIRP: Array.isArray(EIRP) ? EIRP : [],
       modulo: Array.isArray(modulo) ? modulo : [],
+      nombreTestReport: Array.isArray(nombreTestReport) ? nombreTestReport : [],
+      testReportFiles: typeof testReportFiles === 'string' ? testReportFiles.trim() : '',
+      fechaCertificacionSubtel: fechaCertificacionSubtel ? new Date(fechaCertificacionSubtel) : null,
+      oficioCertificacionSubtel: typeof oficioCertificacionSubtel === 'string' ? oficioCertificacionSubtel.trim() : '',
+      resolutionVersion: resolutionVersion && ['2017', '2025'].includes(String(resolutionVersion)) ? String(resolutionVersion) : '2017',
       marca,
       distribuidores
     });
@@ -418,6 +452,30 @@ export const createDispositivo = async (req, res) => {
  *                   type: string
  *                 description: Array de módulos del dispositivo
  *                 example: ["Módulo A", "Módulo B"]
+ *               nombreTestReport:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array de nombres de Test Report del dispositivo
+ *                 example: ["Test Report Galaxy S23", "Test Report WiFi"]
+ *               testReportFiles:
+ *                 type: string
+ *                 description: URL del archivo de Test Report (RAR/ZIP) subido al servidor
+ *                 example: "https://alcancereducido-images.s3.us-east-1.amazonaws.com/test-reports/123e4567-e89b-12d3-a456-426614174000.zip"
+ *               fechaCertificacionSubtel:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Fecha de Certificación SUBTEL
+ *                 example: "2025-01-15T10:00:00.000Z"
+ *               oficioCertificacionSubtel:
+ *                 type: string
+ *                 description: Oficio de Certificación SUBTEL
+ *                 example: "Oficio-12345-2025"
+ *               resolutionVersion:
+ *                 type: string
+ *                 enum: ["2017", "2025"]
+ *                 description: Versión de resolución SUBTEL
+ *                 example: "2025"
  *               marca:
  *                 type: string
  *                 description: ID de la marca (debe existir)
@@ -436,6 +494,15 @@ export const createDispositivo = async (req, res) => {
 export const updateDispositivo = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Debug: Ver qué llega en el body
+    console.log('\n=== UPDATE DISPOSITIVO ===');
+    console.log('ID:', id);
+    console.log('Body recibido - Campos nuevos:');
+    console.log('  fechaCertificacionSubtel:', req.body.fechaCertificacionSubtel, '(tipo:', typeof req.body.fechaCertificacionSubtel, ')');
+    console.log('  oficioCertificacionSubtel:', req.body.oficioCertificacionSubtel, '(tipo:', typeof req.body.oficioCertificacionSubtel, ')');
+    console.log('  resolutionVersion:', req.body.resolutionVersion, '(tipo:', typeof req.body.resolutionVersion, ')');
+    
     const { 
       modelo, 
       tipo, 
@@ -447,6 +514,11 @@ export const updateDispositivo = async (req, res) => {
       gananciaAntena, 
       EIRP, 
       modulo, 
+      nombreTestReport,
+      testReportFiles,
+      fechaCertificacionSubtel,
+      oficioCertificacionSubtel,
+      resolutionVersion,
       ...updateData 
     } = req.body;
 
@@ -497,6 +569,45 @@ export const updateDispositivo = async (req, res) => {
     }
     if (modulo !== undefined) {
       updateData.modulo = Array.isArray(modulo) ? modulo : [];
+    }
+    if (nombreTestReport !== undefined) {
+      updateData.nombreTestReport = Array.isArray(nombreTestReport) ? nombreTestReport : [];
+    }
+    if (testReportFiles !== undefined) {
+      updateData.testReportFiles = typeof testReportFiles === 'string' ? testReportFiles.trim() : '';
+    }
+    // Procesar fechaCertificacionSubtel
+    if (fechaCertificacionSubtel !== undefined) {
+      if (fechaCertificacionSubtel === null || fechaCertificacionSubtel === '') {
+        updateData.fechaCertificacionSubtel = null;
+      } else {
+        const fecha = new Date(fechaCertificacionSubtel);
+        if (isNaN(fecha.getTime())) {
+          return res.status(400).json({
+            error: 'Fecha inválida',
+            message: 'La fecha de certificación SUBTEL debe ser una fecha válida'
+          });
+        }
+        updateData.fechaCertificacionSubtel = fecha;
+      }
+    }
+    
+    // Procesar oficioCertificacionSubtel (permite string vacío)
+    if (oficioCertificacionSubtel !== undefined) {
+      updateData.oficioCertificacionSubtel = String(oficioCertificacionSubtel || '').trim();
+    }
+    
+    // Procesar resolutionVersion (acepta número o string)
+    if (resolutionVersion !== undefined && resolutionVersion !== null) {
+      const resolutionVersionStr = String(resolutionVersion);
+      if (['2017', '2025'].includes(resolutionVersionStr)) {
+        updateData.resolutionVersion = resolutionVersionStr;
+      } else {
+        return res.status(400).json({
+          error: 'Valor inválido',
+          message: 'resolutionVersion debe ser "2017" o "2025"'
+        });
+      }
     }
 
     // Validar y procesar fechaPublicacion si se actualiza
@@ -561,6 +672,15 @@ export const updateDispositivo = async (req, res) => {
 
       updateData.distribuidores = distribuidores;
     }
+
+    // Debug: Verificar que los campos nuevos estén en updateData
+    console.log('\nUpdateData antes de guardar:');
+    console.log('  fechaCertificacionSubtel:', updateData.fechaCertificacionSubtel);
+    console.log('  oficioCertificacionSubtel:', updateData.oficioCertificacionSubtel);
+    console.log('  resolutionVersion:', updateData.resolutionVersion);
+    console.log('  Total campos en updateData:', Object.keys(updateData).length);
+    console.log('  Campos:', Object.keys(updateData).join(', '));
+    console.log('=== FIN UPDATE ===\n');
 
     const dispositivo = await Dispositivo.findByIdAndUpdate(
       id,
