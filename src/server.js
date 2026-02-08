@@ -35,6 +35,7 @@ app.get('/', (req, res) => {
         users: '/api/users',
         distribuidores: '/api/distribuidores',
         dispositivos: '/api/dispositivos',
+        dispositivosPublic: '/api/dispositivos/public',
         marcas: '/api/marcas',
         upload: '/api/upload'
       }
@@ -72,6 +73,7 @@ const startServer = async () => {
       console.log(`   - CRUD /api/users (requiere token)`);
       console.log(`   - CRUD /api/distribuidores (requiere token)`);
       console.log(`   - GET  /api/distribuidores/:slug/info (público)`);
+      console.log(`   - GET  /api/dispositivos/public (público)`);
       console.log(`   - CRUD /api/dispositivos (requiere token)`);
       console.log(`   - CRUD /api/marcas (requiere token, solo admin para crear/editar/eliminar)`);
       console.log(`   - POST /api/upload (requiere token, solo admin)`);

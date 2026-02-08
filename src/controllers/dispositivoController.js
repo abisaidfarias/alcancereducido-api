@@ -4,6 +4,93 @@ import { Marca } from '../models/Marca.js';
 
 /**
  * @swagger
+ * /api/dispositivos/public:
+ *   get:
+ *     summary: Listar todos los dispositivos (público)
+ *     description: Endpoint público que lista todos los dispositivos disponibles sin requerir autenticación. Ordenados por marca (A-Z).
+ *     tags: [Dispositivos]
+ *     parameters:
+ *       - in: query
+ *         name: marca
+ *         schema:
+ *           type: string
+ *         description: Filtrar por ID o nombre de marca
+ *       - in: query
+ *         name: tipo
+ *         schema:
+ *           type: string
+ *         description: Filtrar por tipo de dispositivo
+ *     responses:
+ *       200:
+ *         description: Lista de dispositivos ordenados por marca (A-Z)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 count:
+ *                   type: number
+ *                   example: 10
+ *                 dispositivos:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Dispositivo'
+ *       500:
+ *         description: Error del servidor
+ */
+export const getAllDispositivosPublic = async (req, res) => {
+  try {
+    const { marca, tipo } = req.query;
+    const filter = {};
+    
+    // Filtrar por marca si se proporciona
+    if (marca) {
+      const marcas = await Marca.find({
+        $or: [
+          { _id: marca },
+          { marca: { $regex: new RegExp(marca, 'i') } }
+        ]
+      });
+      if (marcas.length > 0) {
+        filter.marca = { $in: marcas.map(m => m._id) };
+      } else {
+        return res.json({
+          count: 0,
+          dispositivos: []
+        });
+      }
+    }
+    
+    // Filtrar por tipo si se proporciona
+    if (tipo) {
+      filter.tipo = tipo;
+    }
+
+    const dispositivos = await Dispositivo.find(filter)
+      .populate('marca', 'marca fabricante logo')
+      .populate('distribuidores', 'nombre slug');
+    
+    // Ordenar por nombre de marca (A-Z) por defecto
+    dispositivos.sort((a, b) => {
+      const marcaA = a.marca?.marca || '';
+      const marcaB = b.marca?.marca || '';
+      return marcaA.localeCompare(marcaB, 'es', { sensitivity: 'base' });
+    });
+    
+    res.json({
+      count: dispositivos.length,
+      dispositivos: dispositivos
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Error al obtener dispositivos',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * @swagger
  * /api/dispositivos:
  *   get:
  *     summary: Listar todos los dispositivos móviles
@@ -29,7 +116,7 @@ import { Marca } from '../models/Marca.js';
  *         description: Filtrar por distribuidor (solo admin)
  *     responses:
  *       200:
- *         description: Lista de dispositivos
+ *         description: Lista de dispositivos ordenados por marca (A-Z)
  *         content:
  *           application/json:
  *             schema:
@@ -82,8 +169,14 @@ export const getAllDispositivos = async (req, res) => {
 
     const dispositivos = await Dispositivo.find(filter)
       .populate('marca')
-      .populate('distribuidores')
-      .sort({ createdAt: -1 });
+      .populate('distribuidores');
+    
+    // Ordenar por nombre de marca (A-Z) por defecto
+    dispositivos.sort((a, b) => {
+      const marcaA = a.marca?.marca || '';
+      const marcaB = b.marca?.marca || '';
+      return marcaA.localeCompare(marcaB, 'es', { sensitivity: 'base' });
+    });
     
     res.json({
       count: dispositivos.length,
