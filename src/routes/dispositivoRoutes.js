@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { checkAdmin, checkAdminOrDistribuidor } from '../middleware/permissions.js';
 import {
   getAllDispositivosPublic,
+  getDispositivoByIdPublic,
   getAllDispositivos,
   getDispositivoById,
   createDispositivo,
@@ -12,8 +13,9 @@ import {
 
 const router = express.Router();
 
-// Ruta pública (sin autenticación) - debe ir antes de las rutas autenticadas
+// Rutas públicas (sin autenticación) - deben ir antes de las rutas autenticadas
 router.get('/public', getAllDispositivosPublic);
+router.get('/public/:id', getDispositivoByIdPublic);
 
 // Todas las demás rutas requieren autenticación
 router.use(authenticateToken);

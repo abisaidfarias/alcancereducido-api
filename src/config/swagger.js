@@ -262,14 +262,11 @@ const options = {
               description: 'Marca del dispositivo (referencia a Marca)',
               $ref: '#/components/schemas/Marca'
             },
-            distribuidores: {
-              type: 'array',
-              items: {
-                type: 'object',
-                description: 'Distribuidor asociado',
-                $ref: '#/components/schemas/Distribuidor'
-              },
-              description: 'Array de distribuidores asociados (relación muchos a muchos, requerido)'
+            distribuidor: {
+              type: 'object',
+              nullable: true,
+              description: 'Distribuidor asociado (referencia a Distribuidor, puede ser null)',
+              $ref: '#/components/schemas/Distribuidor'
             },
             createdAt: {
               type: 'string',

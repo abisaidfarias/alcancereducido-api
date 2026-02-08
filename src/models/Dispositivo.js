@@ -82,11 +82,11 @@ const dispositivoSchema = new mongoose.Schema({
     ref: 'Marca',
     required: [true, 'La marca es requerida']
   },
-  distribuidores: [{
+  distribuidor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Distribuidor',
-    required: true
-  }]
+    default: null
+  }
 }, {
   timestamps: true // Crea automáticamente createdAt y updatedAt
 });
@@ -95,7 +95,7 @@ const dispositivoSchema = new mongoose.Schema({
 dispositivoSchema.index({ modelo: 1 }, { unique: true }); // Índice único para modelo
 dispositivoSchema.index({ marca: 1 });
 dispositivoSchema.index({ tipo: 1 });
-dispositivoSchema.index({ distribuidores: 1 });
+dispositivoSchema.index({ distribuidor: 1 });
 
 export const Dispositivo = mongoose.model('Dispositivo', dispositivoSchema);
 

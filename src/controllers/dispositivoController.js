@@ -68,7 +68,7 @@ export const getAllDispositivosPublic = async (req, res) => {
 
     const dispositivos = await Dispositivo.find(filter)
       .populate('marca', 'marca fabricante logo')
-      .populate('distribuidores', 'nombre slug');
+      .populate('distribuidor', 'representante nombreRepresentante logo domicilio email sitioWeb');
     
     // Ordenar por nombre de marca (A-Z) por defecto
     dispositivos.sort((a, b) => {
@@ -84,6 +84,67 @@ export const getAllDispositivosPublic = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: 'Error al obtener dispositivos',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * @swagger
+ * /api/dispositivos/public/{id}:
+ *   get:
+ *     summary: Obtener dispositivo por ID (público)
+ *     description: Endpoint público que retorna un dispositivo por su ID sin requerir autenticación.
+ *     tags: [Dispositivos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del dispositivo (MongoDB ObjectId)
+ *     responses:
+ *       200:
+ *         description: Dispositivo encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 dispositivo:
+ *                   $ref: '#/components/schemas/Dispositivo'
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Dispositivo no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
+export const getDispositivoByIdPublic = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dispositivo = await Dispositivo.findById(id)
+      .populate('marca', 'marca fabricante logo')
+      .populate('distribuidor', 'representante nombreRepresentante logo domicilio email sitioWeb');
+
+    if (!dispositivo) {
+      return res.status(404).json({
+        error: 'Dispositivo no encontrado'
+      });
+    }
+
+    res.json({
+      dispositivo: dispositivo
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        error: 'ID inválido',
+        message: 'El ID proporcionado no es válido'
+      });
+    }
+    res.status(500).json({
+      error: 'Error al obtener dispositivo',
       message: error.message
     });
   }
@@ -136,12 +197,12 @@ export const getAllDispositivos = async (req, res) => {
     
     // Si es distribuidor, solo puede ver dispositivos asociados a su distribuidor
     if (req.userData.rol === 'distribuidor') {
-      filter.distribuidores = req.userData.distribuidorId;
+      filter.distribuidor = req.userData.distribuidorId;
     }
     
     // Filtrar por distribuidor (solo admin puede usar este filtro)
     if (distribuidor && req.userData.rol === 'admin') {
-      filter.distribuidores = distribuidor;
+      filter.distribuidor = distribuidor;
     }
     
     if (marca) {
@@ -169,7 +230,7 @@ export const getAllDispositivos = async (req, res) => {
 
     const dispositivos = await Dispositivo.find(filter)
       .populate('marca')
-      .populate('distribuidores');
+      .populate('distribuidor');
     
     // Ordenar por nombre de marca (A-Z) por defecto
     dispositivos.sort((a, b) => {
@@ -216,7 +277,7 @@ export const getDispositivoById = async (req, res) => {
     const { id } = req.params;
     const dispositivo = await Dispositivo.findById(id)
       .populate('marca')
-      .populate('distribuidores');
+      .populate('distribuidor');
 
     if (!dispositivo) {
       return res.status(404).json({
@@ -226,9 +287,8 @@ export const getDispositivoById = async (req, res) => {
 
     // Si es distribuidor, verificar que el dispositivo esté asociado a su distribuidor
     if (req.userData.rol === 'distribuidor') {
-      const tieneAcceso = dispositivo.distribuidores.some(
-        dist => dist._id.toString() === req.userData.distribuidorId.toString()
-      );
+      const distribuidorId = dispositivo.distribuidor?._id || dispositivo.distribuidor;
+      const tieneAcceso = distribuidorId && distribuidorId.toString() === req.userData.distribuidorId.toString();
       
       if (!tieneAcceso) {
         return res.status(403).json({
@@ -272,7 +332,6 @@ export const getDispositivoById = async (req, res) => {
  *             required:
  *               - modelo
  *               - marca
- *               - distribuidores
  *             properties:
  *               modelo:
  *                 type: string
@@ -347,12 +406,11 @@ export const getDispositivoById = async (req, res) => {
  *                 type: string
  *                 description: ID de la marca (debe existir)
  *                 example: "507f1f77bcf86cd799439011"
- *               distribuidores:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Array de IDs de distribuidores (debe tener al menos uno)
- *                 example: ["507f1f77bcf86cd799439012"]
+ *               distribuidor:
+ *                 type: string
+ *                 nullable: true
+ *                 description: ID del distribuidor (o null si no tiene)
+ *                 example: "507f1f77bcf86cd799439012"
  *     responses:
  *       201:
  *         description: Dispositivo creado exitosamente
@@ -378,20 +436,13 @@ export const createDispositivo = async (req, res) => {
       oficioCertificacionSubtel,
       resolutionVersion,
       marca, 
-      distribuidores 
+      distribuidor 
     } = req.body;
 
     if (!modelo || !marca) {
       return res.status(400).json({
         error: 'Datos incompletos',
         message: 'Se requieren modelo y marca del dispositivo'
-      });
-    }
-
-    if (!distribuidores || !Array.isArray(distribuidores) || distribuidores.length === 0) {
-      return res.status(400).json({
-        error: 'Distribuidor requerido',
-        message: 'Se debe asignar al menos un distribuidor al dispositivo'
       });
     }
 
@@ -413,16 +464,15 @@ export const createDispositivo = async (req, res) => {
       });
     }
 
-    // Validar que los distribuidores existen
-    const distribuidoresExistentes = await Distribuidor.find({
-      _id: { $in: distribuidores }
-    });
-    
-    if (distribuidoresExistentes.length !== distribuidores.length) {
-      return res.status(400).json({
-        error: 'Distribuidores inválidos',
-        message: 'Uno o más distribuidores no existen'
-      });
+    // Validar que el distribuidor existe (si se proporciona)
+    if (distribuidor) {
+      const distribuidorExiste = await Distribuidor.findById(distribuidor);
+      if (!distribuidorExiste) {
+        return res.status(400).json({
+          error: 'Distribuidor inválido',
+          message: 'El distribuidor especificado no existe'
+        });
+      }
     }
 
     const newDispositivo = await Dispositivo.create({
@@ -441,18 +491,20 @@ export const createDispositivo = async (req, res) => {
       oficioCertificacionSubtel: typeof oficioCertificacionSubtel === 'string' ? oficioCertificacionSubtel.trim() : '',
       resolutionVersion: resolutionVersion && ['2017', '2025'].includes(String(resolutionVersion)) ? String(resolutionVersion) : '2017',
       marca,
-      distribuidores
+      distribuidor: distribuidor || null
     });
 
-    // Actualizar los distribuidores para agregar el dispositivo
-    await Distribuidor.updateMany(
-      { _id: { $in: distribuidores } },
-      { $addToSet: { dispositivos: newDispositivo._id } }
-    );
+    // Actualizar el distribuidor para agregar el dispositivo
+    if (distribuidor) {
+      await Distribuidor.findByIdAndUpdate(
+        distribuidor,
+        { $addToSet: { dispositivos: newDispositivo._id } }
+      );
+    }
 
     const dispositivoPopulado = await Dispositivo.findById(newDispositivo._id)
       .populate('marca')
-      .populate('distribuidores');
+      .populate('distribuidor');
 
     res.status(201).json({
       message: 'Dispositivo creado exitosamente',
@@ -572,11 +624,10 @@ export const createDispositivo = async (req, res) => {
  *               marca:
  *                 type: string
  *                 description: ID de la marca (debe existir)
- *               distribuidores:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Array de IDs de distribuidores (debe tener al menos uno)
+ *               distribuidor:
+ *                 type: string
+ *                 nullable: true
+ *                 description: ID del distribuidor (o null si no tiene)
  *     responses:
  *       200:
  *         description: Dispositivo actualizado
@@ -600,7 +651,7 @@ export const updateDispositivo = async (req, res) => {
       modelo, 
       tipo, 
       marca, 
-      distribuidores, 
+      distribuidor, 
       fechaPublicacion, 
       tecnologia, 
       frecuencias, 
@@ -715,55 +766,43 @@ export const updateDispositivo = async (req, res) => {
       updateData.fechaPublicacion = fecha;
     }
 
-    // Si se actualizan los distribuidores, validar que existan
-    if (distribuidores && Array.isArray(distribuidores)) {
-      if (distribuidores.length === 0) {
-        return res.status(400).json({
-          error: 'Distribuidor requerido',
-          message: 'Se debe asignar al menos un distribuidor al dispositivo'
-        });
+    // Si se actualiza el distribuidor
+    if (distribuidor !== undefined) {
+      if (distribuidor !== null) {
+        // Validar que el distribuidor existe
+        const distribuidorExiste = await Distribuidor.findById(distribuidor);
+        if (!distribuidorExiste) {
+          return res.status(400).json({
+            error: 'Distribuidor inválido',
+            message: 'El distribuidor especificado no existe'
+          });
+        }
       }
 
-      const distribuidoresExistentes = await Distribuidor.find({
-        _id: { $in: distribuidores }
-      });
-      
-      if (distribuidoresExistentes.length !== distribuidores.length) {
-        return res.status(400).json({
-          error: 'Distribuidores inválidos',
-          message: 'Uno o más distribuidores no existen'
-        });
-      }
-
-      // Obtener distribuidores anteriores
+      // Obtener distribuidor anterior
       const dispositivoAnterior = await Dispositivo.findById(id);
       if (dispositivoAnterior) {
-        const distribuidoresAnteriores = dispositivoAnterior.distribuidores || [];
+        const distribuidorAnterior = dispositivoAnterior.distribuidor;
         
-        // Remover dispositivo de distribuidores que ya no están asociados
-        const distribuidoresARemover = distribuidoresAnteriores.filter(
-          distId => !distribuidores.some(
-            distIdNew => distIdNew.toString() === distId.toString()
-          )
-        );
-        await Distribuidor.updateMany(
-          { _id: { $in: distribuidoresARemover } },
-          { $pull: { dispositivos: id } }
-        );
+        // Si cambió el distribuidor, actualizar las referencias
+        if (distribuidorAnterior && distribuidorAnterior.toString() !== (distribuidor || '').toString()) {
+          // Remover dispositivo del distribuidor anterior
+          await Distribuidor.findByIdAndUpdate(
+            distribuidorAnterior,
+            { $pull: { dispositivos: id } }
+          );
+        }
 
-        // Agregar dispositivo a nuevos distribuidores
-        const distribuidoresAAgregar = distribuidores.filter(
-          distId => !distribuidoresAnteriores.some(
-            distAnt => distAnt.toString() === distId.toString()
-          )
-        );
-        await Distribuidor.updateMany(
-          { _id: { $in: distribuidoresAAgregar } },
-          { $addToSet: { dispositivos: id } }
-        );
+        if (distribuidor && (!distribuidorAnterior || distribuidorAnterior.toString() !== distribuidor.toString())) {
+          // Agregar dispositivo al nuevo distribuidor
+          await Distribuidor.findByIdAndUpdate(
+            distribuidor,
+            { $addToSet: { dispositivos: id } }
+          );
+        }
       }
 
-      updateData.distribuidores = distribuidores;
+      updateData.distribuidor = distribuidor;
     }
 
     // Debug: Verificar que los campos nuevos estén en updateData
@@ -781,7 +820,7 @@ export const updateDispositivo = async (req, res) => {
       { new: true, runValidators: true }
     )
       .populate('marca')
-      .populate('distribuidores');
+      .populate('distribuidor');
 
     if (!dispositivo) {
       return res.status(404).json({
@@ -853,10 +892,10 @@ export const deleteDispositivo = async (req, res) => {
       });
     }
 
-    // Remover dispositivo de todos los distribuidores asociados
-    if (dispositivo.distribuidores && dispositivo.distribuidores.length > 0) {
-      await Distribuidor.updateMany(
-        { _id: { $in: dispositivo.distribuidores } },
+    // Remover dispositivo del distribuidor asociado
+    if (dispositivo.distribuidor) {
+      await Distribuidor.findByIdAndUpdate(
+        dispositivo.distribuidor,
         { $pull: { dispositivos: id } }
       );
     }

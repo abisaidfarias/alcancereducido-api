@@ -690,7 +690,7 @@ export const getDistribuidorByRepresentante = async (req, res) => {
 
     // Buscar todos los dispositivos asociados a este distribuidor desde la tabla Dispositivo
     const dispositivos = await Dispositivo.find({
-      distribuidores: distribuidor._id
+      distribuidor: distribuidor._id
     })
       .populate('marca')
       .sort({ 'marca.marca': 1, modelo: 1 });
@@ -708,7 +708,7 @@ export const getDistribuidorByRepresentante = async (req, res) => {
         marcasMap.set(marcaId, marcaObj);
       }
       
-      // Agregar dispositivo limpio (sin marca ni distribuidores)
+      // Agregar dispositivo limpio (sin marca ni distribuidor)
       const dispositivoLimpio = {
         _id: dispositivo._id,
         modelo: dispositivo.modelo,
