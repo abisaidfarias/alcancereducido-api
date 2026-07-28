@@ -1,0 +1,97 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  EB_APPLICATION_NAME: alcancereducido-api
+  EB_ENVIRONMENT_NAME: alcancereducido-prod
+  AWS_REGION: us-east-1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version-label: ${{ steps.version.outputs.label }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Set version label
+        id: version
+        run: echo "label=prod-$(date +%Y%m%d%H%M%S)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Create deployment package
+        run: |
+          zip -r deploy.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "node_modules/.cache/*" \
+            -x "*.md" \
+            -x "working-extracted/*" \
+            -x "*.ps1"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-package
+          path: deploy.zip
+          retention-days: 3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-package
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve Elastic Beanstalk S3 bucket
+        id: eb-bucket
+        run: |
+          bucket=$(aws elasticbeanstalk create-storage-location --query S3Bucket --output text)
+          echo "bucket=$bucket" >> "$GITHUB_OUTPUT"
+
+      - name: Upload package to S3
+        run: |
+          aws s3 cp deploy.zip "s3://${{ steps.eb-bucket.outputs.bucket }}/${{ env.EB_APPLICATION_NAME }}/${{ needs.build.outputs.version-label }}.zip"
+
+      - name: Create application version
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name "${{ env.EB_APPLICATION_NAME }}" \
+            --version-label "${{ needs.build.outputs.version-label }}" \
+            --source-bundle S3Bucket="${{ steps.eb-bucket.outputs.bucket }}",S3Key="${{ env.EB_APPLICATION_NAME }}/${{ needs.build.outputs.version-label }}.zip"
+
+      - name: Deploy new version
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "${{ env.EB_ENVIRONMENT_NAME }}" \
+            --version-label "${{ needs.build.outputs.version-label }}"
+
+      - name: Wait for environment to stabilize
+        run: |
+          aws elasticbeanstalk wait environment-updated \
+            --environment-name "${{ env.EB_ENVIRONMENT_NAME }}"
