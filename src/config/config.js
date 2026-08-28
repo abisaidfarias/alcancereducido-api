@@ -76,7 +76,26 @@ export const config = {
     return parseInt(process.env.PORT || '3000', 10);
   },
   get jwtSecret() {
-    return getValue('JWT_SECRET', 'secret_key_default_cambiar_en_produccion');
+    const isProduction = process.env.NODE_ENV === 'production';
+    const secret = getValue('JWT_SECRET', isProduction ? undefined : 'dev_only_secret_no_usar_en_produccion');
+
+    if (!secret) {
+      // En producción nunca debemos arrancar con un secreto adivinable:
+      // cualquiera con acceso al código podría forjar tokens válidos.
+      throw new Error(
+        '❌ JWT_SECRET no está configurado. Defínelo como variable de entorno o en AWS Secrets Manager antes de iniciar en producción.'
+      );
+    }
+
+    return secret;
+  },
+  get allowedOrigins() {
+    const configured = getValue('ALLOWED_ORIGINS', '');
+    if (configured) {
+      return configured.split(',').map((origin) => origin.trim()).filter(Boolean);
+    }
+    // Valores por defecto: frontend de producción + entorno local de desarrollo.
+    return ['https://alcance-reducido.com', 'http://localhost:4200'];
   },
   get jwtExpiresIn() {
     return getValue('JWT_EXPIRES_IN', '24h');
