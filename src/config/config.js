@@ -94,8 +94,12 @@ export const config = {
     if (configured) {
       return configured.split(',').map((origin) => origin.trim()).filter(Boolean);
     }
-    // Valores por defecto: frontend de producción + entorno local de desarrollo.
-    return ['https://alcance-reducido.com', 'http://localhost:4200'];
+    // Valores por defecto: frontend de producción (con y sin www) + entorno local de desarrollo.
+    return [
+      'https://alcance-reducido.com',
+      'https://www.alcance-reducido.com',
+      'http://localhost:4200',
+    ];
   },
   get jwtExpiresIn() {
     return getValue('JWT_EXPIRES_IN', '24h');
