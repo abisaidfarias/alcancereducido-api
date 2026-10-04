@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import { config } from './config/config.js';
 import { connectDB } from './config/database.js';
@@ -14,6 +15,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 const app = express();
 
 // Middlewares
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(cors({
   origin: config.allowedOrigins,
 }));
@@ -53,7 +55,7 @@ app.use('/api/upload', uploadRoutes);
 
 // Manejo de errores
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(`❌ ${req.method} ${req.originalUrl} -`, err.stack);
   res.status(500).json({
     error: 'Error interno del servidor',
     message: err.message
